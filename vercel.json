@@ -1,0 +1,14 @@
+{
+  "builds": [
+    {
+      "src": "next.config.js",
+      "use": "@vercel/next"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/re-index",
+      "schedule": "0 0 * * *"
+    }
+  ]
+}
