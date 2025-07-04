@@ -378,7 +378,6 @@ export async function getStaticProps() {
                 initialFid: gameShareFolder.fid,
                 initialError: null,
             },
-            revalidate: 3600, 
         };
     } catch (error) {
         return {
