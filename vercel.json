@@ -1,8 +1,18 @@
 {
   "builds": [
     {
-      "src": "next.config.js",
-      "use": "@vercel/next"
+      "src": "api/**/*.go",
+      "use": "@vercel/go"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/files",
+      "dest": "/api/files.go"
+    },
+    {
+      "src": "/",
+      "dest": "/api/index.go"
     }
   ],
   "crons": [
