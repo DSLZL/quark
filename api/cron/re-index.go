@@ -15,18 +15,10 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rootFid := os.Getenv("QUARK_ROOT_FID")
-	// If QUARK_ROOT_FID is not set, try to find the "游戏分享" folder.
-	if rootFid == "" {
-		// The top-level directory in Quark has a fixed fid "0".
-		foundFid, err := quark.FindFolderFidByName("0", "游戏分享", cookie)
-		if err != nil {
-			// We don't return an HTTP error here because this runs in the background.
-			// Instead, we log the error to the console.
-			fmt.Printf("Cron job failed: Could not automatically find '游戏分享' folder. Please set QUARK_ROOT_FID. Error: %v\n", err)
-			return
-		}
-		rootFid = foundFid
+	rootFid, err := quark.GetRootFid(cookie)
+	if err != nil {
+		fmt.Printf("Cron job failed: Could not get root FID. Error: %v\n", err)
+		return
 	}
 
 	go indexer.ReIndex(rootFid, cookie)
