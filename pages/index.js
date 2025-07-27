@@ -6,8 +6,9 @@ import FileList from '../components/FileList';
 import StatusDisplay from '../components/StatusDisplay';
 
 // --- Main Component ---
-export default function HomePage({ initialBreadcrumbs, initialFid, initialError }) {
+export default function HomePage({ initialBreadcrumbs, initialFid, initialError, initialSharedFids }) {
     const [files, setFiles] = useState([]);
+    const [sharedFids, setSharedFids] = useState(new Set(initialSharedFids));
     const [breadcrumbs, setBreadcrumbs] = useState(initialBreadcrumbs);
     const [currentFid, setCurrentFid] = useState(initialFid);
     const [currentPage, setCurrentPage] = useState(1);
@@ -207,6 +208,7 @@ export default function HomePage({ initialBreadcrumbs, initialFid, initialError 
                     onFolderClick={handleFolderClick}
                     onSort={handleSort}
                     sortConfig={sortConfig}
+                    sharedFids={sharedFids}
                 />
 
                 <div ref={loadMoreRef} style={{ height: '100px', margin: '20px 0' }} />
@@ -226,12 +228,32 @@ export default function HomePage({ initialBreadcrumbs, initialFid, initialError 
 export async function getStaticProps() {
     const cookie = process.env.QUARK_COOKIE;
     if (!cookie) {
-        return { props: { initialBreadcrumbs: [], initialFid: '', initialError: 'Server misconfiguration: QUARK_COOKIE is not set.' } };
+        return { props: { initialBreadcrumbs: [], initialFid: '', initialError: 'Server misconfiguration: QUARK_COOKIE is not set.', initialSharedFids: [] } };
     }
 
     try {
-        const rootDirData = await getCachedQuarkFiles('0', cookie, 1, 'file_name:asc');
-        
+        // Fetch root directory and all shared files in parallel
+        const [rootDirData, allSharesData] = await Promise.all([
+            getCachedQuarkFiles('0', cookie, 1, 'file_name:asc'),
+            (async () => {
+                let allShares = [];
+                let page = 1;
+                let hasMore = true;
+                while (hasMore) {
+                    const response = await fetch(`http://localhost:3000/api/shares?page=${page}&size=50`);
+                    const result = await response.json();
+                    if (result.data && result.data.list) {
+                        allShares.push(...result.data.list);
+                        hasMore = result.data.list.length === 50;
+                        page++;
+                    } else {
+                        hasMore = false;
+                    }
+                }
+                return allShares;
+            })()
+        ]);
+
         if (rootDirData.status !== 200) {
             const errorMsg = rootDirData.message === 'require login [guest]' ? 'Cookie已失效' : rootDirData.message;
             throw new Error(errorMsg);
@@ -240,14 +262,17 @@ export async function getStaticProps() {
         const gameShareFolder = rootDirData.data.list.find(item => item.dir && item.file_name === '游戏分享');
 
         if (!gameShareFolder) {
-            return { props: { initialBreadcrumbs: [], initialFid: '', initialError: '在根目录中未找到 "游戏分享" 文件夹。' } };
+            return { props: { initialBreadcrumbs: [], initialFid: '', initialError: '在根目录中未找到 "游戏分享" 文件夹。', initialSharedFids: [] } };
         }
+
+        const sharedFids = allSharesData.map(item => item.source_fid || item.fid).filter(Boolean);
 
         return {
             props: {
                 initialBreadcrumbs: [{ fid: gameShareFolder.fid, name: gameShareFolder.file_name }],
                 initialFid: gameShareFolder.fid,
                 initialError: null,
+                initialSharedFids: sharedFids,
             },
             revalidate: 3600, 
         };
@@ -257,6 +282,7 @@ export async function getStaticProps() {
                 initialBreadcrumbs: [],
                 initialFid: '',
                 initialError: error.message || '服务器端渲染时发生未知错误。',
+                initialSharedFids: [],
             },
         };
     }

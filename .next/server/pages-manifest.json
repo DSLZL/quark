@@ -3,5 +3,7 @@
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
   "/": "pages/index.js",
-  "/api/files": "pages/api/files.js"
+  "/api/files": "pages/api/files.js",
+  "/shares": "pages/shares.js",
+  "/api/shares": "pages/api/shares.js"
 }

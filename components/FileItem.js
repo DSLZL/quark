@@ -7,7 +7,7 @@ import {
 } from './Icons';
 import quarkConfig from '../utils/config';
 
-const FileItem = ({ file, viewMode, onFolderClick }) => {
+const FileItem = ({ file, viewMode, onFolderClick, isSharePage = false, isShared = false }) => {
     const isFolder = file.dir === true;
     const isZip = /\.(zip|z\d{2})$/i.test(file.file_name);
 
@@ -24,21 +24,22 @@ const FileItem = ({ file, viewMode, onFolderClick }) => {
         );
     }
 
+    const showShareStatus = quarkConfig.enableShareDetection && !isSharePage;
     const IconComponent = isFolder ? ListFolderIcon : (isZip ? ListZipIcon : ListFileIcon);
     return (
         <div
             onClick={() => isFolder && onFolderClick(file)}
             className={`block sm:grid sm:grid-cols-12 sm:gap-4 sm:items-center px-4 py-4 sm:px-6 border-b border-gray-700/50 last:border-b-0 transition-colors ${isFolder ? 'cursor-pointer hover:bg-gray-700/50' : ''}`}
         >
-            <div className={`flex items-center mb-2 sm:mb-0 ${quarkConfig.enableShareDetection ? 'col-span-12 sm:col-span-6 md:col-span-5' : 'col-span-12 sm:col-span-8 md:col-span-7'}`}>
+            <div className={`flex items-center mb-2 sm:mb-0 ${showShareStatus ? 'col-span-12 sm:col-span-6 md:col-span-5' : 'col-span-12 sm:col-span-8 md:col-span-7'}`}>
                 <div className="mr-4 flex-shrink-0 w-6 h-6"><IconComponent /></div>
                 <span className="font-medium text-gray-100 truncate">{file.file_name}</span>
             </div>
-            {quarkConfig.enableShareDetection && (
+            {showShareStatus && (
                 <div className="col-span-12 sm:col-span-2 md:col-span-2 flex items-center justify-center mb-2 sm:mb-0">
                     {isFolder && (
                         <>
-                            {file.is_shared ? <SharedIcon /> : <NotSharedIcon />}
+                            {isShared ? <SharedIcon /> : <NotSharedIcon />}
                         </>
                     )}
                 </div>

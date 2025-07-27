@@ -5,7 +5,7 @@ const quarkConfig = {
   enableSorting: true,
 
   // 是否启用分享检测功能
-  enableShareDetection: false,
+  enableShareDetection: true,
 
   // 是否启用调试日志
   enableDebugLogging: false,

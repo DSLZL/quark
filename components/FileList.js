@@ -3,28 +3,37 @@ import FileItem from './FileItem';
 import { SortIcon } from './Icons';
 import quarkConfig from '../utils/config';
 
-const FileList = ({ files, viewMode, onFolderClick, onSort, sortConfig }) => {
+const FileList = ({ files, viewMode, onFolderClick, onSort, sortConfig, isSharePage = false, sharedFids }) => {
     if (viewMode === 'grid') {
         return (
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-9 gap-4">
                 {files.map((file) => (
-                    <FileItem key={file.fid} file={file} viewMode="grid" onFolderClick={onFolderClick} />
+                    <FileItem
+                        key={file.fid}
+                        file={file}
+                        viewMode="grid"
+                        onFolderClick={onFolderClick}
+                        isSharePage={isSharePage}
+                        isShared={sharedFids && sharedFids.has(file.fid)}
+                    />
                 ))}
             </div>
         );
     }
 
+    const showShareStatus = quarkConfig.enableShareDetection && !isSharePage;
+
     return (
         <div className="bg-gray-800/50 rounded-lg shadow-lg overflow-hidden ring-1 ring-white/10">
             <div className="hidden sm:grid grid-cols-12 gap-4 px-6 py-3 border-b border-gray-700 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                 {quarkConfig.enableSorting ? (
-                    <button onClick={() => onSort('file_name')} className={`flex items-center hover:text-white ${quarkConfig.enableShareDetection ? 'col-span-6 md:col-span-5' : 'col-span-8 md:col-span-7'}`}>
+                    <button onClick={() => onSort('file_name')} className={`flex items-center hover:text-white ${showShareStatus ? 'col-span-6 md:col-span-5' : 'col-span-8 md:col-span-7'}`}>
                         文件名 <SortIcon direction={sortConfig.key === 'file_name' ? sortConfig.direction : null} />
                     </button>
                 ) : (
-                    <div className={`${quarkConfig.enableShareDetection ? 'col-span-6 md:col-span-5' : 'col-span-8 md:col-span-7'}`}>文件名</div>
+                    <div className={`${showShareStatus ? 'col-span-6 md:col-span-5' : 'col-span-8 md:col-span-7'}`}>文件名</div>
                 )}
-                {quarkConfig.enableShareDetection && (
+                {showShareStatus && (
                     <div className="col-span-2 md:col-span-2 text-center">分享状态</div>
                 )}
                 <div className="col-span-2 md:col-span-2 text-right">大小</div>
@@ -37,7 +46,14 @@ const FileList = ({ files, viewMode, onFolderClick, onSort, sortConfig }) => {
                 )}
             </div>
             {files.map((file) => (
-                <FileItem key={file.fid} file={file} viewMode="list" onFolderClick={onFolderClick} />
+                <FileItem
+                    key={file.fid}
+                    file={file}
+                    viewMode="list"
+                    onFolderClick={onFolderClick}
+                    isSharePage={isSharePage}
+                    isShared={sharedFids && sharedFids.has(file.fid)}
+                />
             ))}
         </div>
     );

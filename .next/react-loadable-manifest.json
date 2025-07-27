@@ -1,14 +1,14 @@
 {
-  "node_modules\\.pnpm\\next@15.3.4_react-dom@19.1.0_react@19.1.0__react@19.1.0\\node_modules\\next\\dist\\client\\index.js -> ../pages/_app": {
-    "id": "node_modules\\.pnpm\\next@15.3.4_react-dom@19.1.0_react@19.1.0__react@19.1.0\\node_modules\\next\\dist\\client\\index.js -> ../pages/_app",
+  "node_modules\\.pnpm\\next@15.3.4_@babel+core@7.2_3e2eebc2d06427d442dba2246cbfad72\\node_modules\\next\\dist\\client\\index.js -> ../pages/_app": {
+    "id": "node_modules\\.pnpm\\next@15.3.4_@babel+core@7.2_3e2eebc2d06427d442dba2246cbfad72\\node_modules\\next\\dist\\client\\index.js -> ../pages/_app",
     "files": [
-      "static/chunks/_pages-dir-browser_node_modules_pnpm_next_15_3_4_react-dom_19_1_0_react_19_1_0__react_19_1_0_-84e399.js"
+      "static/chunks/_pages-dir-browser_node_modules_pnpm_next_15_3_4__babel_core_7_2_3e2eebc2d06427d442dba2246cbf-b647e7.js"
     ]
   },
-  "node_modules\\.pnpm\\next@15.3.4_react-dom@19.1.0_react@19.1.0__react@19.1.0\\node_modules\\next\\dist\\client\\index.js -> ../pages/_error": {
-    "id": "node_modules\\.pnpm\\next@15.3.4_react-dom@19.1.0_react@19.1.0__react@19.1.0\\node_modules\\next\\dist\\client\\index.js -> ../pages/_error",
+  "node_modules\\.pnpm\\next@15.3.4_@babel+core@7.2_3e2eebc2d06427d442dba2246cbfad72\\node_modules\\next\\dist\\client\\index.js -> ../pages/_error": {
+    "id": "node_modules\\.pnpm\\next@15.3.4_@babel+core@7.2_3e2eebc2d06427d442dba2246cbfad72\\node_modules\\next\\dist\\client\\index.js -> ../pages/_error",
     "files": [
-      "static/chunks/_pages-dir-browser_node_modules_pnpm_next_15_3_4_react-dom_19_1_0_react_19_1_0__react_19_1_0_-fd8be5.js"
+      "static/chunks/_pages-dir-browser_node_modules_pnpm_next_15_3_4__babel_core_7_2_3e2eebc2d06427d442dba2246cbf-9cdbf5.js"
     ]
   }
 }
