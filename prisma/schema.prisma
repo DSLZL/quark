@@ -21,4 +21,5 @@ model File {
   created_at  DateTime
 
   @@index([pdir_fid])
+  @@index([file_name(ops: raw("gist_trgm_ops"))], type: Gist)
 }

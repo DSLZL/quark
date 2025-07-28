@@ -6,3 +6,10 @@ node_modules/
 npm-debug.log
 
 /generated/prisma
+
+
+# Memory Bank
+memory-bank/
+
+# Next.js
+.next/

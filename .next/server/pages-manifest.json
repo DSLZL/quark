@@ -3,7 +3,6 @@
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
   "/": "pages/index.js",
-  "/api/files": "pages/api/files.js",
-  "/api/search": "pages/api/search.js",
-  "/api/suggestions": "pages/api/suggestions.js"
+  "/api/indexer": "pages/api/indexer.js",
+  "/api/files": "pages/api/files.js"
 }
