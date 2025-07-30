@@ -1,31 +1,8 @@
 import { Index } from "flexsearch";
-import { Database } from "flexsearch/db/postgres";
+import Database from "flexsearch/db/postgres";
 import pgp from "pg-promise";
 
 let mountedIndex = null;
-
-/**
- * Parses a PostgreSQL connection URL and returns a connection object.
- * @param {string} url - The PostgreSQL connection URL.
- * @returns {object} A pg-promise connection object.
- */
-function parseDatabaseUrl(url) {
-    if (!url) {
-        throw new Error("DATABASE_URL environment variable is not set.");
-    }
-    const match = url.match(/postgres:\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/(.+)/);
-    if (!match) {
-        throw new Error("Invalid DATABASE_URL format.");
-    }
-    const [, user, password, host, port, database] = match;
-    return {
-        host,
-        port: parseInt(port, 10),
-        database,
-        user,
-        password,
-    };
-}
 
 /**
  * Gets a singleton instance of a mounted FlexSearch index connected to PostgreSQL.
@@ -36,9 +13,15 @@ export async function getMountedIndex() {
         return mountedIndex;
     }
 
+    const connectionString = process.env.DATABASE_URL;
+    if (!connectionString) {
+        throw new Error("DATABASE_URL environment variable is not set.");
+    }
+
     try {
-        const connectionDetails = parseDatabaseUrl(process.env.DATABASE_URL);
-        const dbInstance = pgp()(connectionDetails);
+        // pg-promise can take the connection string directly.
+        // It should handle the `sslmode=require` parameter correctly.
+        const dbInstance = pgp()(connectionString);
 
         const index = new Index({
             preset: "performance",
