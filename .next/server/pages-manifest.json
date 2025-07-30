@@ -2,7 +2,8 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/": "pages/index.js",
-  "/api/indexer": "pages/api/indexer.js",
-  "/api/files": "pages/api/files.js"
+  "/api/suggestions": "pages/api/suggestions.js",
+  "/api/search": "pages/api/search.js",
+  "/api/files": "pages/api/files.js",
+  "/": "pages/index.js"
 }

@@ -1,5 +1,6 @@
 import { getCachedQuarkFiles } from '../../utils/quark-api';
 import { cacheFilesToDb } from '../../utils/db-cache';
+import { getMountedIndex } from '../../utils/flexsearch';
 
 // In-memory lock to prevent concurrent indexing for the same folder.
 // This is a simple solution for a serverless environment. A more robust
@@ -40,6 +41,14 @@ export default async function handler(req, res) {
             if (files.length > 0) {
                 // Use the new, safer caching function
                 await cacheFilesToDb(files);
+                
+                // Add files to FlexSearch index
+                const index = await getMountedIndex();
+                for (const file of files) {
+                    await index.add(file.fid, file.file_name);
+                }
+                console.log(`Added ${files.length} files to FlexSearch index for folder ${pdir_fid}.`);
+
                 console.log(`Indexed page ${page} for folder ${pdir_fid} with ${files.length} files.`);
             }
             
