@@ -1,6 +1,6 @@
 import Head from 'next/head';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Combobox } from '@headlessui/react';
+import { Combobox, Listbox } from '@headlessui/react';
 import { getCachedQuarkFiles } from '../utils/quark-api';
 
 // --- Helper Functions ---
@@ -34,6 +34,13 @@ const SortIcon = ({ direction }) => {
 };
 
 // --- Main Component ---
+
+const searchTypes = [
+    { value: 'mixed', label: '混合' },
+    { value: 'folder', label: '文件夹' },
+    { value: 'file', label: '文件' },
+];
+
 export default function HomePage({ initialBreadcrumbs, initialFid, initialError }) {
     const [files, setFiles] = useState([]);
     const [breadcrumbs, setBreadcrumbs] = useState(initialBreadcrumbs);
@@ -41,6 +48,7 @@ export default function HomePage({ initialBreadcrumbs, initialFid, initialError 
     const [currentPage, setCurrentPage] = useState(1);
     const [sortConfig, setSortConfig] = useState({ key: 'file_name', direction: 'asc' });
     const [searchQuery, setSearchQuery] = useState('');
+    const [searchType, setSearchType] = useState('mixed'); // 'mixed', 'folder', 'file'
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -80,14 +88,14 @@ export default function HomePage({ initialBreadcrumbs, initialFid, initialError 
         }
     }, []);
 
-    // Effect for initial load and changes in folder/sort
+    // Effect for search
     useEffect(() => {
         if (debouncedSearchQuery) {
             const performSearch = async () => {
                 setIsSearching(true);
                 setError(null);
                 setHasMore(false);
-                const searchUrl = `/api/search?pdir_fid=${currentFid}&query=${debouncedSearchQuery}`;
+                const searchUrl = `/api/search?pdir_fid=${currentFid}&query=${debouncedSearchQuery}&type=${searchType}`;
                 try {
                     const searchResponse = await fetch(searchUrl);
                     if (!searchResponse.ok) {
@@ -103,7 +111,12 @@ export default function HomePage({ initialBreadcrumbs, initialFid, initialError 
                 }
             };
             performSearch();
-        } else {
+        }
+    }, [debouncedSearchQuery, searchType, currentFid]);
+
+    // Effect for loading folder contents when not searching
+    useEffect(() => {
+        if (!debouncedSearchQuery) {
             setFiles([]); // Clear files before loading new folder
             setCurrentPage(1);
             const sortString = `${sortConfig.key}:${sortConfig.direction}`;
@@ -115,7 +128,7 @@ export default function HomePage({ initialBreadcrumbs, initialFid, initialError 
     useEffect(() => {
         if (debouncedSearchQuery) {
             const fetchSuggestions = async () => {
-                const suggestionsUrl = `/api/suggestions?pdir_fid=${currentFid}&query=${debouncedSearchQuery}`;
+                const suggestionsUrl = `/api/suggestions?pdir_fid=${currentFid}&query=${debouncedSearchQuery}&type=${searchType}`;
                 try {
                     const suggestionsResponse = await fetch(suggestionsUrl);
                     if (suggestionsResponse.ok) {
@@ -132,7 +145,7 @@ export default function HomePage({ initialBreadcrumbs, initialFid, initialError 
         } else {
             setSuggestions([]);
         }
-    }, [debouncedSearchQuery, currentFid]);
+    }, [debouncedSearchQuery, currentFid, searchType]);
 
     // Effect for infinite scrolling
     useEffect(() => {
@@ -178,12 +191,14 @@ export default function HomePage({ initialBreadcrumbs, initialFid, initialError 
     }, []);
 
     const handleFolderClick = (file) => {
+        setSearchQuery(''); // Clear search when navigating
         setBreadcrumbs(prev => [...prev, { fid: file.fid, name: file.file_name }]);
         setCurrentFid(file.fid);
         triggerIndexer(file.fid);
     };
 
     const handleBreadcrumbClick = (crumb, index) => {
+        setSearchQuery(''); // Clear search when navigating
         setBreadcrumbs(prev => prev.slice(0, index + 1));
         setCurrentFid(crumb.fid);
         triggerIndexer(crumb.fid);
@@ -240,36 +255,67 @@ export default function HomePage({ initialBreadcrumbs, initialFid, initialError 
                         </nav>
                     </div>
                     <div className="w-full sm:w-auto flex items-center gap-4">
-                        <div className="w-full sm:w-64">
-                            <Combobox value={searchQuery} onChange={setSearchQuery}>
-                                <div className="relative">
-                                    <Combobox.Input
-                                        className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        <div className="flex-grow sm:flex-grow-0 flex items-center gap-2">
+                            <div className="relative w-full sm:w-64">
+                                <Combobox value={searchQuery} onChange={setSearchQuery}>
+                                    <div className="relative">
+                                        <Combobox.Input
+                                            className="w-full pl-3 pr-10 py-2 bg-gray-800 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         onChange={(event) => setSearchQuery(event.target.value)}
                                         placeholder="搜索当前文件夹..."
-                                        displayValue={searchQuery}
-                                        autoComplete="off"
-                                    />
-                                    {(suggestions.length > 0 || isSearching) && (
-                                        <Combobox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-gray-800 py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
-                                            {isSearching && (
-                                                <div className="relative cursor-default select-none py-2 px-4 text-gray-400">
-                                                    正在搜索...
-                                                </div>
-                                            )}
-                                            {!isSearching && suggestions.map(file => (
-                                                <Combobox.Option
-                                                    key={file.fid}
-                                                    value={file.file_name}
+                                            displayValue={searchQuery}
+                                            autoComplete="off"
+                                        />
+                                        {(suggestions.length > 0 || isSearching) && (
+                                            <Combobox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-gray-800 py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                                                {isSearching && (
+                                                    <div className="relative cursor-default select-none py-2 px-4 text-gray-400">
+                                                        正在搜索...
+                                                    </div>
+                                                )}
+                                                {!isSearching && suggestions.map(file => (
+                                                    <Combobox.Option
+                                                        key={file.fid}
+                                                        value={file.file_name}
+                                                        className={({ active }) => `relative cursor-default select-none py-2 pl-4 pr-4 ${active ? 'bg-blue-500/30 text-white' : 'text-gray-300'}`}
+                                                    >
+                                                        {file.file_name}
+                                                    </Combobox.Option>
+                                                ))}
+                                            </Combobox.Options>
+                                        )}
+                                    </div>
+                                </Combobox>
+                            </div>
+                            <div className="relative">
+                                <Listbox value={searchType} onChange={setSearchType}>
+                                    <div className="relative">
+                                        <Listbox.Button className="w-full sm:w-auto pl-3 pr-10 py-2 bg-gray-800 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-left">
+                                            <span className="block truncate">{searchTypes.find(st => st.value === searchType)?.label}</span>
+                                            <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                                                <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                                    <path fillRule="evenodd" d="M10 3a.75.75 0 01.53.22l3.5 3.5a.75.75 0 01-1.06 1.06L10 4.81 7.03 7.78a.75.75 0 01-1.06-1.06l3.5-3.5A.75.75 0 0110 3zm-3.5 9.5a.75.75 0 011.06 0L10 15.19l2.97-2.97a.75.75 0 111.06 1.06l-3.5 3.5a.75.75 0 01-1.06 0l-3.5-3.5a.75.75 0 010-1.06z" clipRule="evenodd" />
+                                                </svg>
+                                            </span>
+                                        </Listbox.Button>
+                                        <Listbox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-gray-800 py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                                            {searchTypes.map((type) => (
+                                                <Listbox.Option
+                                                    key={type.value}
+                                                    value={type.value}
                                                     className={({ active }) => `relative cursor-default select-none py-2 pl-4 pr-4 ${active ? 'bg-blue-500/30 text-white' : 'text-gray-300'}`}
                                                 >
-                                                    {file.file_name}
-                                                </Combobox.Option>
+                                                    {({ selected }) => (
+                                                        <span className={`block truncate ${selected ? 'font-medium' : 'font-normal'}`}>
+                                                            {type.label}
+                                                        </span>
+                                                    )}
+                                                </Listbox.Option>
                                             ))}
-                                        </Combobox.Options>
-                                    )}
-                                </div>
-                            </Combobox>
+                                        </Listbox.Options>
+                                    </div>
+                                </Listbox>
+                            </div>
                         </div>
                         <div className="flex items-center gap-2">
                             <button onClick={() => setViewMode('list')} className={`p-2 rounded-md transition-colors ${viewMode === 'list' ? 'bg-blue-500/30 text-white' : 'text-gray-400 hover:bg-gray-700'}`} aria-label="List view">

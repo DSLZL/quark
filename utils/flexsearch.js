@@ -27,6 +27,19 @@ export async function getMountedIndex() {
             preset: "performance",
             tokenize: "full",
             context: true,
+            async: true, // 推荐用于服务端
+            worker: true, // 启用多线程
+            // 添加冲突处理策略
+            onconflict: {
+                // 当文档ID已存在时，不执行任何操作
+                "add": (current, a) => {
+                    return current;
+                },
+                // 当文档ID已存在时，用新内容替换旧内容
+                "update": (current, u) => {
+                    return u;
+                }
+            }
         });
 
         const db = new Database("quark_search_index", { db: dbInstance });

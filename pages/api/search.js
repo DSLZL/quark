@@ -2,7 +2,7 @@ import prisma from '../../utils/prisma';
 import { getMountedIndex } from '../../utils/flexsearch';
 
 export default async function handler(req, res) {
-    const { pdir_fid, query } = req.query;
+    const { pdir_fid, query, type = 'mixed' } = req.query;
 
     if (!pdir_fid || !query) {
         return res.status(400).json({ error: 'pdir_fid and query parameters are required.' });
@@ -23,13 +23,22 @@ export default async function handler(req, res) {
             });
         }
 
-        const files = await prisma.file.findMany({
-            where: {
-                pdir_fid: pdir_fid,
-                fid: {
-                    in: searchResults,
-                },
+        const whereClause = {
+            pdir_fid: pdir_fid,
+            fid: {
+                in: searchResults,
             },
+        };
+
+        if (type === 'folder') {
+            whereClause.dir = true;
+        } else if (type === 'file') {
+            whereClause.dir = false;
+        }
+        // 'mixed' doesn't need an explicit 'dir' condition
+
+        const files = await prisma.file.findMany({
+            where: whereClause,
         });
 
         res.status(200).json({

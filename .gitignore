@@ -12,4 +12,4 @@ npm-debug.log
 memory-bank/
 
 # Next.js
-.next/
+/.next/
