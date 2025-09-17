@@ -21,4 +21,7 @@ model File {
   created_at  DateTime
 
   @@index([pdir_fid])
+  @@index([pdir_fid, dir])
+  @@index([pdir_fid, updated_at])
+  @@index([pdir_fid, file_name])
 }

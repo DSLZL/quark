@@ -1,8 +1,16 @@
 import axios from 'axios';
 
-// Simple in-memory cache with a TTL (Time-To-Live)
+// 简单的内存缓存（TTL + LRU 容量上限）
 const cache = new Map();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const MAX_CACHE_ENTRIES = 200;   // LRU 容量上限
+
+function evictLRUIfNeeded() {
+    while (cache.size > MAX_CACHE_ENTRIES) {
+        const oldestKey = cache.keys().next().value;
+        cache.delete(oldestKey);
+    }
+}
 
 async function fetchQuarkFiles(pdir_fid, cookie, page = 1, sort = 'file_name:asc') {
     const params = new URLSearchParams({
@@ -51,14 +59,15 @@ export async function getCachedQuarkFiles(pdir_fid, cookie, page, sort) {
             timestamp: Date.now(),
             data: JSON.parse(JSON.stringify(data)),
         });
+        evictLRUIfNeeded();
     }
     
-    // Clean up expired cache items occasionally
-    if (Math.random() < 0.1) {
-        for (const [key, value] of cache.entries()) {
-            if (Date.now() - value.timestamp > CACHE_TTL) {
-                cache.delete(key);
-            }
+    // 轻量过期清理（非关键路径）
+    for (const [key, value] of cache) {
+        if (Date.now() - value.timestamp > CACHE_TTL) {
+            cache.delete(key);
+        } else {
+            break; // Map 为插入有序，遇到未过期即可提前退出
         }
     }
 

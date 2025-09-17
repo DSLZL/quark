@@ -23,11 +23,30 @@ export default async function handler(req, res) {
             });
         }
 
+        // 收集当前分享文件夹的全部子目录（含自身），用于在数据库中过滤整棵子树
+        const folderSet = new Set([pdir_fid]);
+        const queue = [pdir_fid];
+        // 批量广度优先，利用 Prisma 的 IN 查询一次扩展多个父目录
+        while (queue.length > 0) {
+            const batch = queue.splice(0, 50);
+            const childrenDirs = await prisma.file.findMany({
+                where: {
+                    pdir_fid: { in: batch },
+                    dir: true,
+                },
+                select: { fid: true },
+            });
+            for (const dir of childrenDirs) {
+                if (!folderSet.has(dir.fid)) {
+                    folderSet.add(dir.fid);
+                    queue.push(dir.fid);
+                }
+            }
+        }
+
         const whereClause = {
-            pdir_fid: pdir_fid,
-            fid: {
-                in: searchResults,
-            },
+            pdir_fid: { in: Array.from(folderSet) },
+            fid: { in: searchResults },
         };
 
         if (type === 'folder') {
@@ -40,6 +59,10 @@ export default async function handler(req, res) {
         const files = await prisma.file.findMany({
             where: whereClause,
         });
+
+        // 保持与 FlexSearch 返回的相关性顺序一致
+        const orderMap = new Map(searchResults.map((id, idx) => [id, idx]));
+        files.sort((a, b) => (orderMap.get(a.fid) ?? 0) - (orderMap.get(b.fid) ?? 0));
 
         res.status(200).json({
             status: 200,

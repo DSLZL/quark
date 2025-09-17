@@ -39,51 +39,34 @@ export default async function handler(req, res) {
         const startedAt = Date.now();
         let totalFiles = 0;
         let totalPages = 0;
-        let totalFolders = 0;
-        console.log(`[Lock Acquired] Starting recursive indexing for folder: ${pdir_fid}`);
-
-        // 预先获取索引实例，避免循环中重复创建
-        const index = await getMountedIndex();
-
-        // 广度优先遍历整个目录树
-        const queue = [pdir_fid];
-        const visited = new Set();
-        while (queue.length > 0) {
-            const currentFolder = queue.shift();
-            if (visited.has(currentFolder)) continue;
-            visited.add(currentFolder);
-            totalFolders += 1;
-
-            let page = 1;
-            let hasMore = true;
-            while (hasMore) {
-                const apiResult = await getCachedQuarkFiles(currentFolder, cookie, page, 'file_name:asc');
-                if (apiResult.status !== 200 || !apiResult.data || !apiResult.data.list) {
-                    hasMore = false;
-                    break;
-                }
-
-                const files = apiResult.data.list;
-                if (files.length > 0) {
-                    // 缓存到数据库
-                    await cacheFilesToDb(files);
-
-                    // 添加到搜索索引；目录也加入以支持目录搜索
-                    for (const file of files) {
-                        await index.add(file.fid, file.file_name);
-                        if (file.dir === true) {
-                            // 子目录入队以递归处理
-                            queue.push(file.fid);
-                        }
-                    }
-                    totalFiles += files.length;
-                    totalPages += 1;
-                    console.log(`Indexed page ${page} for folder ${currentFolder} with ${files.length} items.`);
-                }
-
-                hasMore = files.length === 50;
-                page += 1;
+        console.log(`[Lock Acquired] Starting background indexing for folder: ${pdir_fid}`);
+        
+        let page = 1;
+        let hasMore = true;
+        while (hasMore) {
+            const apiResult = await getCachedQuarkFiles(pdir_fid, cookie, page, 'file_name:asc');
+            if (apiResult.status !== 200 || !apiResult.data || !apiResult.data.list) {
+                hasMore = false;
+                break;
             }
+            
+            const files = apiResult.data.list;
+            if (files.length > 0) {
+                // Use the new, safer caching function
+                await cacheFilesToDb(files);
+                
+                // Add files to FlexSearch index
+                const index = await getMountedIndex();
+                for (const file of files) {
+                    await index.add(file.fid, file.file_name);
+                }
+                totalFiles += files.length;
+                totalPages += 1;
+                console.log(`Indexed page ${page} for folder ${pdir_fid} with ${files.length} files.`);
+            }
+            
+            hasMore = files.length === 50;
+            page++;
         }
         const durationMs = Date.now() - startedAt;
         console.log(`[Index Summary] folder=${pdir_fid} pages=${totalPages} files=${totalFiles} duration_ms=${durationMs}`);
@@ -102,3 +85,4 @@ export default async function handler(req, res) {
         }
     }
 }
+

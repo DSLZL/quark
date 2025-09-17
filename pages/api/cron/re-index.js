@@ -4,11 +4,11 @@ import prisma from '../../../utils/prisma';
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 export default async function handler(req, res) {
-    // Optional: Add a secret to prevent unauthorized access
-    // For now, we'll allow any request. In production, you'd check a secret.
-    // if (req.headers['authorization'] !== `Bearer ${process.env.CRON_SECRET}`) {
-    //     return res.status(401).end('Unauthorized');
-    // }
+    // 简单的 Bearer 鉴权，防止被外部滥用
+    const auth = req.headers['authorization'];
+    if (!process.env.CRON_SECRET || auth !== `Bearer ${process.env.CRON_SECRET}`) {
+        return res.status(401).end('Unauthorized');
+    }
 
     try {
         console.log('Cron job started: Re-indexing all tracked folders.');
