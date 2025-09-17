@@ -68,6 +68,11 @@ export default function HomePage({ initialBreadcrumbs, initialFid, initialError 
     }, [searchQuery]);
 
     const loadFiles = useCallback(async (fid, page, sort, shouldAppend = false) => {
+        // 无有效文件夹ID时不发请求，避免空 pdir_fid 触发 400
+        if (!fid) {
+            setIsLoading(false);
+            return;
+        }
         setIsLoading(true);
         setError(null);
         try {
@@ -90,7 +95,7 @@ export default function HomePage({ initialBreadcrumbs, initialFid, initialError 
 
     // Effect for search
     useEffect(() => {
-        if (debouncedSearchQuery) {
+        if (debouncedSearchQuery && currentFid) {
             const performSearch = async () => {
                 setIsSearching(true);
                 setError(null);
@@ -116,7 +121,7 @@ export default function HomePage({ initialBreadcrumbs, initialFid, initialError 
 
     // Effect for loading folder contents when not searching
     useEffect(() => {
-        if (!debouncedSearchQuery) {
+        if (!debouncedSearchQuery && currentFid) {
             setFiles([]); // Clear files before loading new folder
             setCurrentPage(1);
             const sortString = `${sortConfig.key}:${sortConfig.direction}`;
@@ -126,7 +131,7 @@ export default function HomePage({ initialBreadcrumbs, initialFid, initialError 
     
     // Effect for search suggestions
     useEffect(() => {
-        if (debouncedSearchQuery) {
+        if (debouncedSearchQuery && currentFid) {
             const fetchSuggestions = async () => {
                 const suggestionsUrl = `/api/suggestions?pdir_fid=${currentFid}&query=${debouncedSearchQuery}&type=${searchType}`;
                 try {
@@ -149,7 +154,7 @@ export default function HomePage({ initialBreadcrumbs, initialFid, initialError 
 
     // Effect for infinite scrolling
     useEffect(() => {
-        if (isLoading || !hasMore || debouncedSearchQuery) return;
+        if (isLoading || !hasMore || debouncedSearchQuery || !currentFid) return;
 
         const observer = new IntersectionObserver(
             (entries) => {
@@ -185,6 +190,7 @@ export default function HomePage({ initialBreadcrumbs, initialFid, initialError 
     };
 
     const triggerIndexer = useCallback((fid) => {
+        if (!fid) return;
         fetch(`/api/indexer?pdir_fid=${fid}`).catch(err => {
             console.error(`Failed to trigger background indexer for ${fid}:`, err);
         });
