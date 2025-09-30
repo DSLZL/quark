@@ -12,17 +12,33 @@ function evictLRUIfNeeded() {
     }
 }
 
+function normalizeSort(sort) {
+    const [k = 'file_name', d = 'asc'] = String(sort || '').split(':');
+    const key = (k === 'updated_at' || k === 'file_name') ? k : 'file_name';
+    const dir = (d === 'desc' || d === 'asc') ? d : 'asc';
+    return `${key}:${dir}`;
+}
+
 async function fetchQuarkFiles(pdir_fid, cookie, page = 1, sort = 'file_name:asc') {
+    if (!cookie) {
+        const err = new Error('Missing QUARK_COOKIE for Quark API request');
+        err.status = 500;
+        throw err;
+    }
+
+    const safePage = Math.max(1, parseInt(page, 10) || 1);
+    const safeSort = normalizeSort(sort);
+
     const params = new URLSearchParams({
         pr: 'ucpro',
         fr: 'pc',
         uc_param_str: '',
         pdir_fid: pdir_fid,
-        _page: page,
+        _page: safePage,
         _size: 50,
         _fetch_total: 1,
         _fetch_sub_dirs: 0,
-        _sort: `file_type:asc,${sort}`,
+        _sort: `file_type:asc,${safeSort}`,
     });
     const url = `https://drive-pc.quark.cn/1/clouddrive/file/sort?${params.toString()}`;
 
@@ -33,12 +49,22 @@ async function fetchQuarkFiles(pdir_fid, cookie, page = 1, sort = 'file_name:asc
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Cookie': cookie,
         },
+        timeout: 10000,
+        validateStatus: (s) => s >= 200 && s < 500, // 让错误状态走统一分支
     });
 
     const contentType = response.headers['content-type'];
     if (!contentType || !contentType.includes('application/json')) {
-        // This is likely an HTML error page from Quark (e.g., login page)
-        throw new Error('Invalid response from Quark API. The cookie might be expired or invalid.');
+        const err = new Error('Invalid response from Quark API. The cookie might be expired or invalid.');
+        err.status = 502;
+        throw err;
+    }
+
+    if (response.status >= 400) {
+        const msg = response.data?.message || `Quark API error (${response.status})`;
+        const err = new Error(msg);
+        err.status = response.status === 401 || response.status === 403 ? 401 : 502;
+        throw err;
     }
 
     return response.data;

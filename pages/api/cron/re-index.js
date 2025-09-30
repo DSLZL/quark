@@ -1,13 +1,14 @@
 import prisma from '../../../utils/prisma';
+import { withApiHandler, UnauthorizedError } from '../../../utils/api-handler';
 
 // Helper function to introduce a delay
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-export default async function handler(req, res) {
+export default withApiHandler(async function handler(req, res) {
     // 简单的 Bearer 鉴权，防止被外部滥用
     const auth = req.headers['authorization'];
     if (!process.env.CRON_SECRET || auth !== `Bearer ${process.env.CRON_SECRET}`) {
-        return res.status(401).end('Unauthorized');
+        throw new UnauthorizedError('Unauthorized');
     }
 
     try {
@@ -39,9 +40,8 @@ export default async function handler(req, res) {
         }
 
         res.status(200).json({ message: `Successfully triggered re-indexing for ${folderIds.length} folders.` });
-
     } catch (error) {
         console.error('Cron job failed:', error);
         res.status(500).json({ error: 'Cron job execution failed.', details: error.message });
     }
-}
+});

@@ -2,18 +2,19 @@ import { getCachedQuarkFiles } from '../../utils/quark-api';
 import { cacheFilesToDb } from '../../utils/db-cache';
 import { getMountedIndex } from '../../utils/flexsearch';
 import prisma from '../../utils/prisma';
+import { withApiHandler, BadRequestError } from '../../utils/api-handler';
 
 // In-memory lock to prevent concurrent indexing for the same folder.
 // This is a simple solution for a serverless environment. A more robust
 // solution for stateful servers might use a Redis lock or similar.
 const indexingInProgress = new Set();
 
-export default async function handler(req, res) {
+export default withApiHandler(async function handler(req, res) {
     const { pdir_fid } = req.query;
     const cookie = process.env.QUARK_COOKIE;
 
     if (!pdir_fid || !cookie) {
-        return res.status(400).json({ error: 'pdir_fid and cookie are required.' });
+        throw new BadRequestError('pdir_fid and cookie are required.');
     }
 
     // 先尝试基于 Postgres 的顾问锁，确保多实例下互斥
@@ -101,4 +102,4 @@ export default async function handler(req, res) {
             }
         }
     }
-}
+});
