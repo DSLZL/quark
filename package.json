@@ -14,7 +14,7 @@
     "@heroui/react": "^2.8.4",
     "@prisma/client": "^6.10.1",
     "@tailwindcss/postcss": "^4.1.11",
-    "axios": "^1.10.0",
+    "axios": "^1.12.0",
     "flexsearch": "^0.8.205",
     "framer-motion": "^12.23.13",
     "next": "15.3.4",
